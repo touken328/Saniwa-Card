@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사니와증 생성기</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas (고화질 PNG 저장용) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Google Fonts: Noto Sans KR & Noto Serif KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f4f3f6;
+      color: #1f2937;
+    }
+
+    /* 사니와증 실제 렌더링 영역 (1600 x 1000) */
+    #saniwa-card {
+      width: 1600px;
+      height: 1000px;
+      min-width: 1600px;
+      min-height: 1000px;
+      position: relative;
+      box-sizing: border-box;
+      background-color: #d8dde2;
+      border-radius: 50px;
+      padding: 35px 40px;
+      box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      user-select: none;
+      color: #242224;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    /* 카드 상단 바 */
+    .card-top-bar {
+      height: 85px;
+      border: 2px solid #4a474a;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.12);
+      position: relative;
+      z-index: 10;
+    }
+
+    /* 카드 메인 영역 */
+    .card-main-box {
+      margin-top: 30px;
+      height: 810px;
+      border: 2px solid #4a474a;
+      border-radius: 15px;
+      padding: 0px 30px 20px 25px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+
+    /* 테이블 셀 공통 선 스타일 */
+    .cell-border {
+      border-color: #5a565a;
+    }
+    
+    /* 카드 내 텍스트 줄간격 (※ padding-bottom 강제 제거 규칙 삭제:
+       신임 박스/직인 등의 위아래 여백이 비대칭이 되던 원인) */
+    #saniwa-card .card-top-bar > div,
+    #saniwa-card .card-main-box .flex > div,
+    #saniwa-card table th,
+    #saniwa-card table td {
+      line-height: 1.1;
+    }
+    
+    /* 한마디(한 줄 이상 길어질 때) 전용 스타일 */
+    #view-comment {
+      white-space: normal;
+      word-break: keep-all;
+      line-height: 1.3;
+      padding: 8px 16px !important;
+      text-align: center;
+      overflow: visible;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* 좌측 세로 '사니와증' 텍스트 */
+    /* writing-mode(세로쓰기)는 html2canvas가 제대로 그리지 못해 글자 단위 세로 배치로 교체 */
+    .vertical-title {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-weight: 700;
+      font-size: 76px;
+      color: #343134;
+    }
+    .vertical-title > span {
+      display: block;
+      height: 1.2em;      /* 글자 1em + 자간 0.2em */
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* 신임 / 일반 / 숙련 뱃지 박스 */
+    .rank-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      width: 112px;
+      height: 68px;
+      border: 4px solid #2c292c;
+      border-radius: 20px;
+      padding: 0 12px;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #2c292c;
+      background-color: rgba(255, 255, 255, 0.15);
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* 우측 하단 직인 스타일 */
+    /* ※ inset box-shadow 는 html2canvas 에서 도장 전체가 붉게/체크무늬로 칠해지는 버그가 있어
+         '안쪽 테두리'를 별도 요소(.hanko-inner)의 border 로 구현 */
+    .hanko-stamp {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      box-sizing: border-box;
+      border: 4px solid #b83227;
+      border-radius: 12px;
+      background-color: #ffffff;
+      transform: rotate(-1.5deg);
+    }
+    .hanko-inner {
+      position: absolute;
+      top: 2px; left: 2px; right: 2px; bottom: 2px;
+      box-sizing: border-box;
+      border: 2px solid #b83227;
+      border-radius: 6px;
+      background-color: #ffffff;
+      color: #b83227;
+      font-family: 'Noto Serif KR', serif;
+      font-weight: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.05;
+    }
+
+    /* 커스텀 스크롤바 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e5e7eb;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 상단 헤더 -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-[1520px] mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-rose-600 flex items-center justify-center font-serif font-bold text-lg shadow-inner">
+          審
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight">사니와증 생성기</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <button id="btn-reset" type="button" class="px-3.5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs sm:text-sm font-medium transition cursor-pointer">
+          기본값 초기화
+        </button>
+        <button id="btn-download" type="button" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-1.5 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+          </svg>
+          이미지로 저장 (PNG)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- 메인 작업 공간 -->
+  <main class="flex-1 max-w-[1520px] w-full mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+    <!-- 좌측: 입력 폼 패널 (5 cols) -->
+    <section class="xl:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 sm:p-6 space-y-6">
+
+      <!-- 1. 카드 배경 & 문양 & 이미지 설정 -->
+      <div class="space-y-4">
+        <h2 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          사니와증 설정
+        </h2>
+
+        <!-- 배경색 선택 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-2">배경색 선택 (팔레트 또는 우측에서 직접 지정)</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-bg="#d8dde2" class="bg-preset w-7 h-7 rounded-full border-2 border-slate-800 shadow-sm cursor-pointer" style="background-color: #d8dde2;" title="은회색"></button>
+            <button type="button" data-bg="#cde2ec" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #cde2ec;" title="하늘색"></button>
+            <button type="button" data-bg="#d4e4d6" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #d4e4d6;" title="연녹색"></button>
+            <button type="button" data-bg="#ece3ce" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #ece3ce;" title="한지"></button>
+            <button type="button" data-bg="#ebd3d8" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #ebd3d8;" title="벚꽃"></button>
+            <button type="button" data-bg="#dcd1d7" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #dcd1d7;" title="연자주"></button>
+            <button type="button" data-bg="#d6d5ea" class="bg-preset w-7 h-7 rounded-full border border-slate-300 shadow-sm cursor-pointer" style="background-color: #d6d5ea;" title="등꽃"></button>
+
+            <div class="flex items-center gap-1.5 ml-auto bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+              <input type="color" id="input-bg-color" value="#d8dde2" class="w-6 h-6 cursor-pointer border-0 bg-transparent p-0" />
+              <input type="text" id="input-bg-hex" value="#d8dde2" maxlength="7" class="w-20 text-xs font-mono text-slate-700 bg-transparent focus:outline-none uppercase" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 배경 문양 설정 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="select-watermark" class="block text-xs font-semibold text-slate-600">배경 문양 선택</label>
+              <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="checkbox-watermark-invert" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer" />
+                <span>색반전</span>
+              </label>
+            </div>
+            <select id="select-watermark" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="custom" selected>직접 업로드</option>
+              <option value="none">문양 없음</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="input-watermark-opacity" class="block text-xs font-semibold text-slate-600 mb-1">
+              문양 투명도: <span id="watermark-opacity-val" class="text-rose-600 font-bold">45%</span>
+            </label>
+            <input type="range" id="input-watermark-opacity" min="0" max="100" value="45" class="w-full accent-rose-600 mt-2 cursor-pointer" />
+          </div>
+        </div>
+
+        <!-- 커스텀 문양 업로드 (직접 업로드 선택 시 활성화) -->
+        <div id="custom-watermark-box" class="bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">배경 문양 이미지 (투명 PNG 권장)</label>
+          <input type="file" id="input-watermark-file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer" />
+        </div>
+
+        <!-- [우측] 이미지 입력 (정사각형 이미지) -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700">근시 이미지 (정사각형 권장)</label>
+            <button type="button" id="btn-clear-avatar" class="text-xs text-slate-500 hover:text-rose-600 underline cursor-pointer">기본 일러스트로 복원</button>
+          </div>
+          <input type="file" id="input-avatar-file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
+
+          <!-- 이미지 위치/확대 미세 조정 & 장식 뱃지 토글 -->
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] text-slate-500">확대 (<span id="avatar-zoom-val">100</span>%)</label>
+              <input type="range" id="input-avatar-zoom" min="50" max="200" value="100" class="w-full accent-slate-700 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-500">가로 위치 (<span id="avatar-x-val">0</span>)</label>
+              <input type="range" id="input-avatar-x" min="-100" max="100" value="0" class="w-full accent-slate-700 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-500">세로 위치 (<span id="avatar-y-val">0</span>)</label>
+              <input type="range" id="input-avatar-y" min="-100" max="100" value="0" class="w-full accent-slate-700 cursor-pointer" />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-4 pt-1 text-xs text-slate-700">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="toggle-rank-ribbon" checked class="rounded text-rose-600 focus:ring-rose-500" />
+              <span>좌상단 리본 표시</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="toggle-sakura-badge" checked class="rounded text-rose-600 focus:ring-rose-500" />
+              <span>좌하단 벚꽃 표시</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. [맨 위] & [좌측] 기본 정보 -->
+      <div class="space-y-3">
+        <h2 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          사니와 기본 정보
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="input-saniwa-name" class="block text-xs font-semibold text-slate-600 mb-1">사니와명</label>
+            <input type="text" id="input-saniwa-name" placeholder="사니와명 입력" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">사니와 경력</label>
+            <div class="grid grid-cols-3 gap-1.5">
+              <label class="cursor-pointer">
+                <input type="radio" name="saniwa-rank" value="신임" checked class="peer sr-only" />
+                <div class="text-center py-2 rounded-lg border border-slate-300 text-xs font-bold peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition">신임</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="saniwa-rank" value="일반" class="peer sr-only" />
+                <div class="text-center py-2 rounded-lg border border-slate-300 text-xs font-bold peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition">일반</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="saniwa-rank" value="숙련" class="peer sr-only" />
+                <div class="text-center py-2 rounded-lg border border-slate-300 text-xs font-bold peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition">숙련</div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 취임일 (0000년 00월 00일) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">취임일 (0000년 00월 00일)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="relative">
+              <input type="text" id="input-date-year" maxlength="4" placeholder="2015" class="w-full rounded-lg border border-slate-300 pl-3 pr-7 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span class="absolute right-2.5 top-2 text-xs text-slate-500 font-medium">년</span>
+            </div>
+            <div class="relative">
+              <input type="text" id="input-date-month" maxlength="2" placeholder="1" class="w-full rounded-lg border border-slate-300 pl-3 pr-7 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span class="absolute right-2.5 top-2 text-xs text-slate-500 font-medium">월</span>
+            </div>
+            <div class="relative">
+              <input type="text" id="input-date-day" maxlength="2" placeholder="14" class="w-full rounded-lg border border-slate-300 pl-3 pr-7 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span class="absolute right-2.5 top-2 text-xs text-slate-500 font-medium">일</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. [중앙] 혼마루 및 도검 정보 -->
+      <div class="space-y-3">
+        <h2 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          혼마루 정보
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="input-honmaru" class="block text-xs font-semibold text-slate-600 mb-1">
+              혼마루명 <span class="text-emerald-600 font-normal">(끝에 '성' 자동 표기)</span>
+            </label>
+            <div class="relative">
+              <input type="text" id="input-honmaru" placeholder="예: 오사카" class="w-full rounded-lg border border-slate-300 pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <span class="absolute right-3 top-2 text-xs text-slate-500 font-bold">성</span>
+            </div>
+          </div>
+
+          <div>
+            <label for="input-server" class="block text-xs font-semibold text-slate-600 mb-1">
+              소속 <span class="text-emerald-600 font-normal">(00국 형태)</span>
+            </label>
+            <input type="text" id="input-server" placeholder="예: 이와미국, 비젠국" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="input-tenure-years" class="block text-xs font-semibold text-slate-600 mb-1">취임 (주년)</label>
+            <div class="relative">
+              <input type="text" id="input-tenure-years" class="w-full rounded-lg border border-slate-300 pl-3 pr-7 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <span class="absolute right-2.5 top-2 text-xs text-slate-500">년</span>
+            </div>
+          </div>
+          <div>
+            <label for="input-elapsed-days" class="block text-xs font-semibold text-slate-600 mb-1">경과 (일차)</label>
+            <div class="relative">
+              <input type="text" id="input-elapsed-days" class="w-full rounded-lg border border-slate-300 pl-3 pr-7 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <span class="absolute right-2.5 top-2 text-xs text-slate-500">일</span>
+            </div>
+          </div>
+          <div>
+            <label for="input-level" class="block text-xs font-semibold text-slate-600 mb-1">레벨</label>
+            <div class="relative">
+              <span class="absolute left-2.5 top-2 text-xs text-slate-500 font-semibold">Lv.</span>
+              <input type="text" id="input-level" class="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="input-comment" class="block text-xs font-semibold text-slate-600 mb-1">한마디</label>
+          <input type="text" id="input-comment" placeholder="한마디 입력" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="input-kinji" class="block text-xs font-semibold text-slate-600 mb-1">근시</label>
+            <input type="text" id="input-kinji" placeholder="근시 도검남사" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="input-starter" class="block text-xs font-semibold text-slate-600 mb-1">시작의 한 자루 (초기도)</label>
+            <input type="text" id="input-starter" placeholder="초기도" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. [하단] 부대 및 도종별 수치 입력 -->
+      <div class="space-y-3">
+        <h2 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          설비 및 도검 보유 현황
+        </h2>
+
+        <!-- 좌측 5칸: 부대, 말, 보물, 단조, 수리 -->
+        <div>
+          <p class="text-[11px] font-semibold text-slate-500 mb-1.5">혼마루 설비</p>
+          <div class="grid grid-cols-5 gap-2">
+            <div>
+              <label for="stat-unit" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">부대</label>
+              <input type="text" id="stat-unit" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-horse" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">말</label>
+              <input type="text" id="stat-horse" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-treasure" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">보물</label>
+              <input type="text" id="stat-treasure" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-forge" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">단도실</label>
+              <input type="text" id="stat-forge" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-repair" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">수리실</label>
+              <input type="text" id="stat-repair" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측 9칸: 전원, 단도, 협차, 타도, 태도, 대태, 창, 치도, 검 -->
+        <div class="pt-1">
+          <p class="text-[11px] font-semibold text-slate-500 mb-1.5">도검남사</p>
+          <div class="grid grid-cols-5 sm:grid-cols-9 gap-1.5">
+            <div>
+              <label for="stat-touken" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">전원</label>
+              <input type="text" id="stat-touken" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-tanto" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">단도</label>
+              <input type="text" id="stat-tanto" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-wakizashi" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">협차</label>
+              <input type="text" id="stat-wakizashi" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-uchigatana" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">타도</label>
+              <input type="text" id="stat-uchigatana" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-tachi" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">태도</label>
+              <input type="text" id="stat-tachi" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-ootachi" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">대태도</label>
+              <input type="text" id="stat-ootachi" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-yari" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">창</label>
+              <input type="text" id="stat-yari" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-naginata" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">치도</label>
+              <input type="text" id="stat-naginata" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label for="stat-tsurugi" class="block text-[11px] text-center font-semibold text-slate-600 mb-1">검</label>
+              <input type="text" id="stat-tsurugi" class="w-full rounded-lg border border-slate-300 py-1.5 px-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 우측: 실시간 사니와증 미리보기 패널 (7 cols) -->
+    <section class="xl:col-span-7 xl:sticky xl:top-20 flex flex-col items-center">
+      <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200/90 p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 class="text-sm sm:text-base font-bold text-slate-800">실시간 사니와증 미리보기</h2>
+          </div>
+          <span class="text-xs text-slate-400">출력 해상도: 1600 × 1000 px</span>
+        </div>
+
+        <!-- 반응형 스케일 컨테이너 (가로·세로 정중앙 정렬) -->
+        <div id="preview-scale-container" class="w-full overflow-hidden flex justify-center items-center bg-slate-100/80 rounded-xl p-3 sm:p-5 border border-slate-200/80">
+          <div id="scale-wrapper" class="flex items-center justify-center shrink-0">
+            <div id="scale-inner" class="origin-center transition-transform duration-150 shrink-0">
+
+              <!-- ========================================== -->
+              <!-- 실제 이미지로 캡처될 사니와증 카드 본체 -->
+              <!-- ========================================== -->
+              <div id="saniwa-card">
+
+                <!-- 배경 문양 워터마크 레이어 (중앙 배치) -->
+                <div id="card-watermark-layer" class="absolute inset-0 flex items-center justify-center pointer-events-none z-0" style="opacity: 0.45;">
+                  <!-- 커스텀 업로드 문양 이미지 -->
+                  <img id="img-custom-watermark" src="" alt="커스텀 문양" class="hidden max-w-[800px] max-h-[800px] object-contain" />
+                </div>
+
+                <!-- 1. [맨 위] 상단 바 (사니와명 + 취임일) -->
+                <div class="card-top-bar">
+                  <div class="w-[160px] h-full flex items-center justify-center border-r cell-border text-[26px] font-medium tracking-tight">
+                    사니와명
+                  </div>
+                  <div id="view-saniwa-name" class="flex-1 h-full flex items-center justify-center border-r cell-border text-[36px] font-semibold px-4 truncate">
+                    이름
+                  </div>
+                  <div class="w-[160px] h-full flex items-center justify-center border-r cell-border text-[26px] font-medium tracking-tight">
+                    취임일
+                  </div>
+                  <div class="w-[500px] h-full flex items-center justify-center text-[32px] font-medium tracking-wide px-3">
+                    <span id="view-date-year">2026</span><span class="text-[26px] ml-1 mr-4">년</span>
+                    <span id="view-date-month">11</span><span class="text-[26px] ml-1 mr-4">월</span>
+                    <span id="view-date-day">25</span><span class="text-[26px] ml-1">일</span>
+                  </div>
+                </div>
+
+                <!-- 2. 메인 바디 영역 -->
+                <div class="card-main-box">
+
+                  <!-- 상단 중단부: 좌측 세로 타이틀 + 중앙 표 + 우측 프로필 정사각형 -->
+                  <div class="flex items-stretch justify-between gap-4 h-[610px]">
+
+                    <!-- [좌측] 사니와증 세로 글씨 & 신임/일반/숙련 뱃지 -->
+                    <div class="w-[130px] flex flex-col items-center justify-center gap-8 shrink-0 h-full">
+                      <div class="vertical-title"><span>사</span><span>니</span><span>와</span><span>증</span></div>
+                      <div id="view-saniwa-rank" class="rank-box">신임</div>
+                    </div>
+
+                    <!-- [중앙] 혼마루명 ~ 시작의 한 자루 테이블 (직각 사각형) -->
+                    <div class="flex-1 flex flex-col justify-between h-full">
+
+                      <!-- 상단 6행 테이블 -->
+                      <div class="border cell-border rounded-none overflow-hidden bg-white/[0.04] shrink-0">
+                        <!-- 행 1: 혼마루명 -->
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[24px] font-medium">혼마루명</div>
+                          <div class="flex-1 flex items-center justify-center text-[32px] font-bold px-3 truncate">
+                            <span id="view-honmaru">성</span>
+                          </div>
+                        </div>
+                        <!-- 행 2: 소속 -->
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[24px] font-medium">소속</div>
+                          <div class="flex-1 flex items-center justify-center text-[32px] font-medium px-3 truncate">
+                            <span id="view-server">국</span>
+                          </div>
+                        </div>
+                        <!-- 행 3: 취임 -->
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[24px] font-medium">취임</div>
+                          <div class="flex-1 flex items-center justify-center text-[32px] font-medium">
+                            <span id="view-tenure-years">0</span><span class="text-[26px] ml-1">년</span>
+                          </div>
+                        </div>
+                        <!-- 행 4: 경과 -->
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[24px] font-medium">경과</div>
+                          <div class="flex-1 flex items-center justify-center text-[32px] font-medium">
+                            <span id="view-elapsed-days">0</span><span class="text-[26px] ml-1">일</span>
+                          </div>
+                        </div>
+                        <!-- 행 5: 레벨 -->
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[26px] font-medium">Lv.</div>
+                          <div class="flex-1 flex items-center justify-center text-[32px] font-medium">
+                            <span id="view-level">0</span>
+                          </div>
+                        </div>
+                        <!-- 행 6: 한마디 -->
+                        <div class="flex h-[80px]">
+                          <div class="w-[160px] flex items-center justify-center border-r cell-border text-[24px] font-medium">한마디</div>
+                          <div id="view-comment" class="flex-1 flex items-center justify-center text-[26px] font-medium px-4 break-keep text-center">
+                            없음
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 하단 2행 분리 테이블: 근시 & 시작의 한 자루 (직각 사각형) -->
+                      <div class="border cell-border rounded-none overflow-hidden bg-white/[0.04] mt-3 shrink-0">
+                        <div class="flex h-[72px] border-b cell-border">
+                          <div class="w-[190px] flex items-center justify-center border-r cell-border text-[24px] font-medium">근시</div>
+                          <div id="view-kinji" class="flex-1 flex items-center justify-center text-[32px] font-medium px-3 truncate">
+                            없음
+                          </div>
+                        </div>
+                        <div class="flex h-[72px]">
+                          <div class="w-[190px] flex items-center justify-center border-r cell-border text-[24px] font-medium">시작의 한 자루</div>
+                          <div id="view-starter" class="flex-1 flex items-center justify-center text-[32px] font-medium px-3 truncate">
+                            카슈 키요미츠
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <!-- [우측] 정사각형 프로필 사진 프레임 (직각) -->
+                    <div class="w-[500px] h-[500px] self-center shrink-0 relative border-2 border-[#7c767a] rounded-none bg-[#ece4c8] overflow-hidden shadow-inner">
+                      <!-- 한지 질감 은은한 배경 그라데이션 -->
+                      <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,#f6f1df_0%,#dfd5b5_100%)]"></div>
+
+                      <!-- 기본 일러스트 (이미지 미업로드 시 표시) -->
+                      <div id="avatar-placeholder" class="absolute inset-0 flex flex-col items-center justify-center">
+                        <svg viewBox="0 0 300 300" class="w-full h-full">
+                          <defs>
+                            <radialGradient id="crestBg" cx="50%" cy="48%" r="45%">
+                              <stop offset="0%" stop-color="#f7f2e2" />
+                              <stop offset="100%" stop-color="#d7ccb0" />
+                            </radialGradient>
+                          </defs>
+                          <rect width="300" height="300" fill="url(#crestBg)" />
+                          <!-- 전통 문양 장식 원 -->
+                          <circle cx="150" cy="145" r="98" fill="none" stroke="#9e8f6c" stroke-width="2" stroke-dasharray="6 4" opacity="0.55" />
+                          <circle cx="150" cy="145" r="82" fill="none" stroke="#8b7b58" stroke-width="1.5" opacity="0.4" />
+                          <!-- 도검 실루엣 아이콘 -->
+                          <g transform="translate(150, 142) rotate(-38)">
+                            <rect x="-4" y="-88" width="8" height="120" rx="2" fill="#6d6864" />
+                            <polygon points="-4,-88 4,-88 0,-104" fill="#6d6864" />
+                            <ellipse cx="0" cy="34" rx="16" ry="5" fill="#463f3a" />
+                            <rect x="-5" y="39" width="10" height="44" rx="2" fill="#3a3330" />
+                          </g>
+                          <text x="150" y="266" text-anchor="middle" fill="#6c624d" font-size="13" font-weight="600" font-family="Noto Sans KR, sans-serif">
+                            좌측 메뉴에서 이미지 업로드
+                          </text>
+                        </svg>
+                      </div>
+
+                      <!-- 사용자 업로드 이미지 -->
+                      <img id="view-avatar-img" src="" alt="이미지" class="hidden absolute inset-0 w-full h-full object-cover origin-center" />
+
+                      <!-- 좌상단 계급 리본 장식 -->
+                      <div id="badge-rank-ribbon" class="absolute top-0 left-4 z-20 pointer-events-none drop-shadow">
+                        <svg width="50" height="70" viewBox="0 0 34 46">
+                          <polygon points="0,0 34,0 34,46 17,37 0,46" fill="#476e2d" stroke="#2c471b" stroke-width="1.5" />
+                          <polygon points="17,7 28,15 24,15 17,10 10,15 6,15" fill="#f3e59a" />
+                          <polygon points="17,16 28,24 24,24 17,19 10,24 6,24" fill="#f3e59a" />
+                          <rect x="8" y="26" width="18" height="3.5" fill="#f3e59a" />
+                        </svg>
+                      </div>
+
+                      <!-- 좌하단 벚꽃 엠블럼 장식 -->
+                      <div id="badge-sakura" class="absolute bottom-4 left-4 z-20 pointer-events-none drop-shadow-sm">
+                        <svg width="54" height="54" viewBox="0 0 64 64">
+                          <g transform="translate(32,32)">
+                            <g transform="rotate(0)">
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                            </g>
+                            <g transform="rotate(72)">
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                            </g>
+                            <g transform="rotate(144)">
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                            </g>
+                            <g transform="rotate(216)">
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                            </g>
+                            <g transform="rotate(288)">
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                            </g>
+                            <circle cx="0" cy="0" r="5.5" fill="#9fb0ea" />
+                          </g>
+                        </svg>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- 하단 바: 좌측 통계 테이블 2개 + 우측 역방본부총무과 & 직인 고정 -->
+                  <div class="flex items-end justify-between gap-4 pt-3">
+
+                    <!-- 하단 통계 표 영역 (직각 사각형) -->
+                    <div class="flex items-center gap-4 ml-3">
+                      <!-- 표 1: 부대, 말, 보물, 단조, 수리 (5열) -->
+                      <table class="border-collapse border cell-border rounded-none text-center bg-white/[0.06]">
+                        <thead>
+                          <tr class="h-[46px] text-[20px] font-medium">
+                            <th class="w-[64px] border-r cell-border font-medium">부대</th>
+                            <th class="w-[64px] border-r cell-border font-medium">말</th>
+                            <th class="w-[64px] border-r cell-border font-medium">보물</th>
+                            <th class="w-[64px] border-r cell-border font-medium">단조</th>
+                            <th class="w-[64px] border-r cell-border font-medium">수리</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr class="h-[46px] text-[24px] font-semibold">
+                            <td id="view-stat-unit" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-horse" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-treasure" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-forge" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-repair" class="border-t border-r cell-border"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <!-- 표 2: 전원, 단도, 협차, 타도, 태도, 대태, 창, 치도, 검 (9열) -->
+                      <table class="border-collapse border cell-border rounded-none text-center bg-white/[0.06]">
+                        <thead>
+                          <tr class="h-[46px] text-[20px] font-medium">
+                            <th class="w-[70px] border-r cell-border font-medium">전원</th>
+                            <th class="w-[62px] border-r cell-border font-medium">단도</th>
+                            <th class="w-[62px] border-r cell-border font-medium">협차</th>
+                            <th class="w-[62px] border-r cell-border font-medium">타도</th>
+                            <th class="w-[62px] border-r cell-border font-medium">태도</th>
+                            <th class="w-[62px] border-r cell-border font-medium">대태</th>
+                            <th class="w-[62px] border-r cell-border font-medium">창</th>
+                            <th class="w-[62px] border-r cell-border font-medium">치도</th>
+                            <th class="w-[62px] border-r cell-border font-medium">검</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr class="h-[46px] text-[24px] font-semibold">
+                            <td id="view-stat-touken" class="border-t border-r cell-border">132</td>
+                            <td id="view-stat-tanto" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-wakizashi" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-uchigatana" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-tachi" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-ootachi" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-yari" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-naginata" class="border-t border-r cell-border"></td>
+                            <td id="view-stat-tsurugi" class="border-t border-r cell-border"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- 우측 하단 고정: 역방본부총무과 텍스트 + 붉은 직인 + 카피라이트 -->
+                    <div class="flex flex-col items-end justify-end shrink-0 pr-2">
+                      <div class="flex items-center gap-4">
+                        <span class="text-[#b83227] font-bold text-[28px] tracking-tight" style="font-family: 'Noto Serif KR', serif;">
+                          역방본부총무과　　
+                        </span>
+                        <div class="hanko-stamp" aria-label="역방본부총무과 직인">
+                          <div class="hanko-inner">
+                            <span class="text-[24px] tracking-[0.22em]">역방</span>
+                            <span class="text-[24px] tracking-[0.22em]">본부</span>
+                            <span class="text-[18px] tracking-tighter">총무과</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="text-[16px] font-semibold text-[#3a373a] tracking-tight mt-2">
+                        ( 비공식 )
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+              <!-- ========================================== -->
+              <!-- 사니와증 카드 끝 -->
+              <!-- ========================================== -->
+
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
+          <p>💡 <strong>팁:</strong> 혼마루명은 입력한 글자 뒤에 자동으로 <strong>'성'</strong>이 붙어 표시됩니다. (예: <code>무명</code> → <code>무명성</code>)</p>
+          <button id="btn-download-bottom" type="button" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition cursor-pointer shrink-0">
+            사니와증 PNG 다운로드
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // -------------------------------------------------------
+    // 0-A. localStorage 설정 저장/복원 (정의)
+    // -------------------------------------------------------
+    const STORAGE_KEY = 'saniwa-card-settings-v1';
+    let currentBgHex = '#d8dde2';
+    // 복원 중에는 저장하지 않는다. (복원 도중 발생하는 change/input 이벤트가
+    //  아직 채워지지 않은 빈 값으로 저장소를 덮어써서 근시 이미지가 사라지던 원인)
+    let isRestoring = false;
+
+    function saveSettingsToStorage() {
+      if (isRestoring) return;
+      try {
+        const settings = {
+          bgColor: currentBgHex,
+          watermarkSrc: imgCustomWatermark.getAttribute('src') || '',
+          watermarkInvert: checkboxWatermarkInvert.checked,
+          watermarkOpacity: inputWatermarkOpacity.value,
+          watermarkSelect: selectWatermark.value,
+          avatarSrc: viewAvatarImg.getAttribute('src') || '',
+          avatarZoom: inputAvatarZoom.value,
+          avatarX: inputAvatarX.value,
+          avatarY: inputAvatarY.value,
+          rankRibbon: toggleRankRibbon.checked,
+          sakuraBadge: toggleSakuraBadge.checked,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      } catch (e) {
+        console.warn('설정 저장 실패:', e);
+        showToast('브라우저 저장 공간이 부족해 이미지 설정을 저장하지 못했습니다. 더 작은 이미지를 사용해 주세요.', true);
+      }
+    }
+
+    function loadSettingsFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        isRestoring = true;
+
+        if (s.bgColor) applyBackgroundColor(s.bgColor);
+
+        if (s.watermarkSelect) {
+          selectWatermark.value = s.watermarkSelect;
+          selectWatermark.dispatchEvent(new Event('change'));
+        }
+        if (s.watermarkSrc) {
+          imgCustomWatermark.src = s.watermarkSrc;
+          if (s.watermarkSelect === 'custom') {
+            imgCustomWatermark.classList.remove('hidden');
+          }
+        }
+        checkboxWatermarkInvert.checked = !!s.watermarkInvert;
+        updateWatermarkInvert();
+        if (s.watermarkOpacity) {
+          inputWatermarkOpacity.value = s.watermarkOpacity;
+          inputWatermarkOpacity.dispatchEvent(new Event('input'));
+        }
+
+        if (s.avatarSrc) {
+          viewAvatarImg.src = s.avatarSrc;
+          viewAvatarImg.classList.remove('hidden');
+          avatarPlaceholder.classList.add('hidden');
+        }
+        if (s.avatarZoom) inputAvatarZoom.value = s.avatarZoom;
+        if (s.avatarX) inputAvatarX.value = s.avatarX;
+        if (s.avatarY) inputAvatarY.value = s.avatarY;
+        updateAvatarTransform();
+
+        toggleRankRibbon.checked = s.rankRibbon !== false;
+        badgeRankRibbon.classList.toggle('hidden', !toggleRankRibbon.checked);
+        toggleSakuraBadge.checked = s.sakuraBadge !== false;
+        badgeSakura.classList.toggle('hidden', !toggleSakuraBadge.checked);
+      } catch (e) {
+        console.warn('설정 복원 실패:', e);
+      } finally {
+        isRestoring = false;
+      }
+    }
+
+    // 업로드 이미지를 축소해서 저장 용량(localStorage 약 5MB)을 아낀다.
+    function downscaleDataUrl(dataUrl, maxSide) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const w = img.naturalWidth, h = img.naturalHeight;
+          if (Math.max(w, h) <= maxSide) return resolve(dataUrl);
+          const r = maxSide / Math.max(w, h);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(w * r);
+          canvas.height = Math.round(h * r);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const keepAlpha = /^data:image\/(png|webp|gif)/i.test(dataUrl);
+          resolve(keepAlpha ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.92));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+      // -------------------------------------------------------
+      // 1. 반응형 카드 미리보기 스케일링 (가로·세로 정중앙 정렬 유지)
+      // -------------------------------------------------------
+      const previewContainer = document.getElementById('preview-scale-container');
+      const scaleWrapper = document.getElementById('scale-wrapper');
+      const scaleInner = document.getElementById('scale-inner');
+      const CARD_WIDTH = 1600;
+      const CARD_HEIGHT = 1000;
+
+      function updatePreviewScale() {
+        if (!previewContainer || !scaleWrapper || !scaleInner) return;
+        const style = window.getComputedStyle(previewContainer);
+        const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+        const availableWidth = previewContainer.clientWidth - paddingX;
+        const scale = Math.min(1, availableWidth / CARD_WIDTH);
+
+        const scaledWidth = CARD_WIDTH * scale;
+        const scaledHeight = CARD_HEIGHT * scale;
+
+        scaleWrapper.style.width = `${scaledWidth}px`;
+        scaleWrapper.style.height = `${scaledHeight}px`;
+
+        scaleInner.style.width = `${CARD_WIDTH}px`;
+        scaleInner.style.height = `${CARD_HEIGHT}px`;
+        scaleInner.style.transformOrigin = 'center center';
+        scaleInner.style.transform = `scale(${scale})`;
+
+        previewContainer.style.height = `${scaledHeight + paddingY}px`;
+      }
+
+      window.addEventListener('resize', updatePreviewScale);
+      updatePreviewScale();
+
+      // -------------------------------------------------------
+      // 2. 토스트 알림 유틸리티 (alert 대체)
+      // -------------------------------------------------------
+      function showToast(message, isError = false) {
+        const toastBox = document.getElementById('toast-box');
+        const toast = document.createElement('div');
+        toast.className = `px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium text-white transition-all duration-300 transform translate-y-2 opacity-0 ${
+          isError ? 'bg-red-600' : 'bg-slate-800'
+        }`;
+        toast.textContent = message;
+        toastBox.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 2800);
+      }
+
+      // -------------------------------------------------------
+      // 3. 배경색 및 배경 문양 제어
+      // -------------------------------------------------------
+      const saniwaCard = document.getElementById('saniwa-card');
+      const inputBgColor = document.getElementById('input-bg-color');
+      const inputBgHex = document.getElementById('input-bg-hex');
+      const bgPresets = document.querySelectorAll('.bg-preset');
+
+      function applyBackgroundColor(hex) {
+        if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+        saniwaCard.style.backgroundColor = hex;
+        inputBgColor.value = hex;
+        inputBgHex.value = hex.toUpperCase();
+        currentBgHex = hex.toUpperCase();
+
+        bgPresets.forEach((btn) => {
+          if (btn.dataset.bg.toLowerCase() === hex.toLowerCase()) {
+            btn.classList.add('border-2', 'border-slate-800');
+            btn.classList.remove('border-slate-300');
+          } else {
+            btn.classList.remove('border-2', 'border-slate-800');
+            btn.classList.add('border', 'border-slate-300');
+          }
+        });
+        saveSettingsToStorage();
+      }
+
+      bgPresets.forEach((btn) => {
+        btn.addEventListener('click', () => applyBackgroundColor(btn.dataset.bg));
+      });
+
+      inputBgColor.addEventListener('input', (e) => applyBackgroundColor(e.target.value));
+      inputBgHex.addEventListener('input', (e) => {
+        let val = e.target.value.trim();
+        if (!val.startsWith('#')) val = '#' + val;
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+          applyBackgroundColor(val);
+        }
+      });
+
+      // 배경 문양 선택, 투명도 및 색반전
+      const selectWatermark = document.getElementById('select-watermark');
+      const checkboxWatermarkInvert = document.getElementById('checkbox-watermark-invert');
+      const inputWatermarkOpacity = document.getElementById('input-watermark-opacity');
+      const watermarkOpacityVal = document.getElementById('watermark-opacity-val');
+      const watermarkLayer = document.getElementById('card-watermark-layer');
+      const customWatermarkBox = document.getElementById('custom-watermark-box');
+      const inputWatermarkFile = document.getElementById('input-watermark-file');
+      const imgCustomWatermark = document.getElementById('img-custom-watermark');
+
+      function updateWatermarkInvert() {
+        const isInverted = checkboxWatermarkInvert.checked;
+        imgCustomWatermark.style.filter = isInverted ? 'invert(1)' : 'none';
+      }
+
+      selectWatermark.addEventListener('change', (e) => {
+        const val = e.target.value;
+
+        if (val === 'custom') {
+          customWatermarkBox.classList.remove('hidden');
+          if (imgCustomWatermark.getAttribute('src')) {
+            imgCustomWatermark.classList.remove('hidden');
+          }
+        } else {
+          customWatermarkBox.classList.add('hidden');
+          imgCustomWatermark.classList.add('hidden');
+        }
+        saveSettingsToStorage();
+      });
+
+      checkboxWatermarkInvert.addEventListener('change', () => {
+        updateWatermarkInvert();
+        saveSettingsToStorage();
+      });
+
+      inputWatermarkOpacity.addEventListener('input', (e) => {
+        const opacity = e.target.value;
+        watermarkOpacityVal.textContent = `${opacity}%`;
+        watermarkLayer.style.opacity = opacity / 100;
+        saveSettingsToStorage();
+      });
+
+      inputWatermarkFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          imgCustomWatermark.src = await downscaleDataUrl(ev.target.result, 1200);
+          if (selectWatermark.value === 'custom') {
+            imgCustomWatermark.classList.remove('hidden');
+          }
+          updateWatermarkInvert();
+          saveSettingsToStorage();
+          showToast('배경 문양 이미지가 적용되었습니다.');
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // -------------------------------------------------------
+      // 4. 텍스트 및 수치 실시간 바인딩
+      // -------------------------------------------------------
+      function bindText(inputId, viewId, transformFn = null) {
+        const inputEl = document.getElementById(inputId);
+        const viewEl = document.getElementById(viewId);
+        if (!inputEl || !viewEl) return;
+
+        const update = () => {
+          const rawVal = inputEl.value;
+          viewEl.textContent = transformFn ? transformFn(rawVal) : rawVal;
+        };
+
+        inputEl.addEventListener('input', update);
+        update();
+      }
+
+      // 상단 바
+      bindText('input-saniwa-name', 'view-saniwa-name');
+      bindText('input-date-year', 'view-date-year');
+      bindText('input-date-month', 'view-date-month');
+      bindText('input-date-day', 'view-date-day');
+
+      // 좌측 사니와증 구분 (신임 / 일반 / 숙련)
+      const rankRadios = document.querySelectorAll('input[name="saniwa-rank"]');
+      const viewSaniwaRank = document.getElementById('view-saniwa-rank');
+      rankRadios.forEach((radio) => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            viewSaniwaRank.textContent = e.target.value;
+          }
+        });
+      });
+
+      // 중앙 혼마루명 (마지막에 + '성' 자동 표기)
+      bindText('input-honmaru', 'view-honmaru', (val) => {
+        const trimmed = val.trim();
+        if (!trimmed) return '성';
+        return trimmed.endsWith('성') ? trimmed : `${trimmed}성`;
+      });
+
+      bindText('input-server', 'view-server');
+      bindText('input-tenure-years', 'view-tenure-years');
+      bindText('input-elapsed-days', 'view-elapsed-days');
+      bindText('input-level', 'view-level');
+      bindText('input-comment', 'view-comment');
+      bindText('input-kinji', 'view-kinji');
+      bindText('input-starter', 'view-starter');
+
+      // 하단 설비 5종
+      bindText('stat-unit', 'view-stat-unit');
+      bindText('stat-horse', 'view-stat-horse');
+      bindText('stat-treasure', 'view-stat-treasure');
+      bindText('stat-forge', 'view-stat-forge');
+      bindText('stat-repair', 'view-stat-repair');
+
+      // 하단 도검/전원 9종
+      bindText('stat-touken', 'view-stat-touken');
+      bindText('stat-tanto', 'view-stat-tanto');
+      bindText('stat-wakizashi', 'view-stat-wakizashi');
+      bindText('stat-uchigatana', 'view-stat-uchigatana');
+      bindText('stat-tachi', 'view-stat-tachi');
+      bindText('stat-ootachi', 'view-stat-ootachi');
+      bindText('stat-yari', 'view-stat-yari');
+      bindText('stat-naginata', 'view-stat-naginata');
+      bindText('stat-tsurugi', 'view-stat-tsurugi');
+
+      // -------------------------------------------------------
+      // 5. 우측 이미지 업로드 & 위치/확대/뱃지 제어
+      // -------------------------------------------------------
+      const inputAvatarFile = document.getElementById('input-avatar-file');
+      const viewAvatarImg = document.getElementById('view-avatar-img');
+      const avatarPlaceholder = document.getElementById('avatar-placeholder');
+      const btnClearAvatar = document.getElementById('btn-clear-avatar');
+
+      const inputAvatarZoom = document.getElementById('input-avatar-zoom');
+      const inputAvatarX = document.getElementById('input-avatar-x');
+      const inputAvatarY = document.getElementById('input-avatar-y');
+      const avatarZoomVal = document.getElementById('avatar-zoom-val');
+      const avatarXVal = document.getElementById('avatar-x-val');
+      const avatarYVal = document.getElementById('avatar-y-val');
+
+      function updateAvatarTransform() {
+        const zoom = inputAvatarZoom.value;
+        const x = inputAvatarX.value;
+        const y = inputAvatarY.value;
+
+        avatarZoomVal.textContent = zoom;
+        avatarXVal.textContent = x;
+        avatarYVal.textContent = y;
+
+        viewAvatarImg.style.transform = `translate(${x}px, ${y}px) scale(${zoom / 100})`;
+      }
+
+      inputAvatarZoom.addEventListener('input', () => { updateAvatarTransform(); saveSettingsToStorage(); });
+      inputAvatarX.addEventListener('input', () => { updateAvatarTransform(); saveSettingsToStorage(); });
+      inputAvatarY.addEventListener('input', () => { updateAvatarTransform(); saveSettingsToStorage(); });
+
+      inputAvatarFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          viewAvatarImg.src = await downscaleDataUrl(ev.target.result, 1200);
+          viewAvatarImg.classList.remove('hidden');
+          avatarPlaceholder.classList.add('hidden');
+          inputAvatarZoom.value = 100;
+          inputAvatarX.value = 0;
+          inputAvatarY.value = 0;
+          updateAvatarTransform();
+          saveSettingsToStorage();
+          showToast('이미지가 적용되었습니다.');
+        };
+        reader.readAsDataURL(file);
+      });
+
+      btnClearAvatar.addEventListener('click', () => {
+        inputAvatarFile.value = '';
+        viewAvatarImg.src = '';
+        viewAvatarImg.classList.add('hidden');
+        avatarPlaceholder.classList.remove('hidden');
+        inputAvatarZoom.value = 100;
+        inputAvatarX.value = 0;
+        inputAvatarY.value = 0;
+        updateAvatarTransform();
+        saveSettingsToStorage();
+        showToast('기본 일러스트로 복원되었습니다.');
+      });
+
+      // 계급 리본 & 벚꽃 엠블럼 토글
+      const toggleRankRibbon = document.getElementById('toggle-rank-ribbon');
+      const badgeRankRibbon = document.getElementById('badge-rank-ribbon');
+      toggleRankRibbon.addEventListener('change', (e) => {
+        badgeRankRibbon.classList.toggle('hidden', !e.target.checked);
+        saveSettingsToStorage();
+      });
+
+      const toggleSakuraBadge = document.getElementById('toggle-sakura-badge');
+      const badgeSakura = document.getElementById('badge-sakura');
+      toggleSakuraBadge.addEventListener('change', (e) => {
+        badgeSakura.classList.toggle('hidden', !e.target.checked);
+        saveSettingsToStorage();
+      });
+
+      // -------------------------------------------------------
+      // 6. 초기화 버튼 기능
+      // -------------------------------------------------------
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        applyBackgroundColor('#d8dde2');
+        selectWatermark.value = 'custom';
+        selectWatermark.dispatchEvent(new Event('change'));
+        checkboxWatermarkInvert.checked = false;
+        updateWatermarkInvert();
+        inputWatermarkOpacity.value = 45;
+        inputWatermarkOpacity.dispatchEvent(new Event('input'));
+
+        document.getElementById('input-saniwa-name').value = '';
+        document.querySelector('input[name="saniwa-rank"][value="신임"]').checked = true;
+        viewSaniwaRank.textContent = '신임';
+
+        document.getElementById('input-date-year').value = '';
+        document.getElementById('input-date-month').value = '';
+        document.getElementById('input-date-day').value = '';
+
+        document.getElementById('input-honmaru').value = '';
+        document.getElementById('input-server').value = '';
+        document.getElementById('input-tenure-years').value = '';
+        document.getElementById('input-elapsed-days').value = '';
+        document.getElementById('input-level').value = '';
+        document.getElementById('input-comment').value = '';
+        document.getElementById('input-kinji').value = '';
+        document.getElementById('input-starter').value = '';
+
+        const defaults = {
+          'stat-unit': '',
+          'stat-horse': '',
+          'stat-treasure': '',
+          'stat-forge': '',
+          'stat-repair': '',
+          'stat-touken': '',
+          'stat-tanto': '',
+          'stat-wakizashi': '',
+          'stat-uchigatana': '',
+          'stat-tachi': '',
+          'stat-ootachi': '',
+          'stat-yari': '',
+          'stat-naginata': '',
+          'stat-tsurugi': ''
+        };
+
+        Object.entries(defaults).forEach(([id, val]) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = val;
+            el.dispatchEvent(new Event('input'));
+          }
+        });
+
+        ['input-saniwa-name', 'input-date-year', 'input-date-month', 'input-date-day',
+         'input-honmaru', 'input-server', 'input-tenure-years', 'input-elapsed-days',
+         'input-level', 'input-comment', 'input-kinji', 'input-starter'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.dispatchEvent(new Event('input'));
+        });
+
+        toggleRankRibbon.checked = true;
+        badgeRankRibbon.classList.remove('hidden');
+        toggleSakuraBadge.checked = true;
+        badgeSakura.classList.remove('hidden');
+
+        showToast('모든 항목이 기본값으로 초기화되었습니다.');
+      });
+
+      // -------------------------------------------------------
+      // 7. PNG 이미지 다운로드 기능 (html2canvas + 색반전 픽셀 보장)
+      // -------------------------------------------------------
+      function createInvertedDataUrl(imgElement) {
+        return new Promise((resolve, reject) => {
+          const src = imgElement.getAttribute('src');
+          if (!src) return reject(new Error('이미지 src 없음'));
+
+          const tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          tempImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = tempImg.naturalWidth || tempImg.width;
+              canvas.height = tempImg.naturalHeight || tempImg.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(tempImg, 0, 0);
+
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imageData.data;
+              for (let i = 0; i < data.length; i += 4) {
+                data[i] = 255 - data[i];
+                data[i + 1] = 255 - data[i + 1];
+                data[i + 2] = 255 - data[i + 2];
+              }
+              ctx.putImageData(imageData, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+            } catch (e) {
+              reject(e);
+            }
+          };
+          tempImg.onerror = () => reject(new Error('이미지 로드 실패'));
+          tempImg.src = src;
+        });
+      }
+
+
+      // -------------------------------------------------------
+      // 7-A. html2canvas 글자 위치 보정 도우미
+      //  - html2canvas 는 복제 iframe 안에서 웹폰트가 로드되기 전의 글자 크기/위치를 기준으로
+      //    글자를 그려서, 화면과 달리 글자가 아래로 쏠리는 문제가 있다.
+      //  (1) 복제본 안에서 폰트를 확실히 로드하고
+      //  (2) 그래도 남는 어긋남은 '탐침(probe)'으로 실측해서 글자별로 보정한다.
+      // -------------------------------------------------------
+      const fontKeyOf = (cs) => `${cs.fontFamily}|${cs.fontWeight}`;
+
+      async function ensureCloneFonts(doc, root) {
+        // 복제 문서의 스타일시트(구글 폰트 CSS)가 붙을 때까지 대기
+        const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+        await Promise.all(links.map((l) => (l.sheet ? null : new Promise((res) => {
+          l.addEventListener('load', res);
+          l.addEventListener('error', res);
+          setTimeout(res, 4000);
+        }))));
+
+        // 실제 쓰이는 (폰트, 굵기)별로 필요한 글자만 로드
+        const win = doc.defaultView;
+        const jobs = new Map();
+        const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const t = walker.currentNode;
+          if (!t.nodeValue.trim() || !t.parentElement) continue;
+          const cs = win.getComputedStyle(t.parentElement);
+          const key = fontKeyOf(cs);
+          const prev = jobs.get(key) || { font: `${cs.fontWeight} 32px ${cs.fontFamily}`, text: '' };
+          prev.text += t.nodeValue;
+          jobs.set(key, prev);
+        }
+        await Promise.all(Array.from(jobs.values()).map((j) =>
+          doc.fonts.load(j.font, j.text).catch(() => {})));
+        if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+      }
+
+      // 지정 폰트/굵기/크기에서 html2canvas 가 글자를 '실제보다 몇 px 아래'에 그리는지 측정
+      async function probeOffsetPx(family, weight, size) {
+        const W = size * 3, H = Math.max(size * 2, 60);
+        const css = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;display:flex;` +
+          `align-items:center;justify-content:center;background:#fff;color:#000;margin:0;padding:0;` +
+          `font-family:${family};font-weight:${weight};font-size:${size}px;line-height:1.1;`;
+        const ref = document.createElement('div');   // 기준(브라우저 실제 위치) 측정용
+        ref.style.cssText = css;
+        ref.innerHTML = '<span>가<i style="display:inline-block;width:0;height:0;"></i></span>';
+        const target = document.createElement('div'); // html2canvas 로 캡처할 쪽
+        target.style.cssText = css;
+        target.textContent = '가';
+        document.body.appendChild(ref);
+        document.body.appendChild(target);
+        try {
+          await document.fonts.load(`${weight} ${size}px ${family}`, '가');
+          const marker = ref.querySelector('i').getBoundingClientRect();
+          const baselineY = marker.bottom - ref.getBoundingClientRect().top;
+
+          const ctx = document.createElement('canvas').getContext('2d');
+          ctx.font = `${weight} ${size}px ${family}`;
+          const m = ctx.measureText('가');
+          const expectedCenter = baselineY - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+
+          const cv = await html2canvas(target, {
+            scale: 1, useCORS: true, backgroundColor: '#ffffff', logging: false,
+            onclone: async (doc, el) => { await ensureCloneFonts(doc, el); },
+          });
+          const { data, width, height } = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
+          let minY = -1, maxY = -1;
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              if (data[(y * width + x) * 4] < 128) { if (minY < 0) minY = y; maxY = y; break; }
+            }
+          }
+          if (minY < 0) return 0;
+          const observedCenter = (minY + maxY + 1) / 2;
+          const off = observedCenter - expectedCenter;
+          return Math.abs(off) > size * 0.8 ? 0 : off;
+        } finally {
+          ref.remove();
+          target.remove();
+        }
+      }
+
+      // 카드에 쓰인 (폰트, 굵기) 조합마다 offset(px) = k * fontSize + c 를 구한다.
+      async function calibrateTextOffsets(card) {
+        const combos = new Map();
+        const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const t = walker.currentNode;
+          if (!t.nodeValue.trim() || !t.parentElement || t.parentElement.closest('svg')) continue;
+          const cs = getComputedStyle(t.parentElement);
+          combos.set(fontKeyOf(cs), { family: cs.fontFamily, weight: cs.fontWeight });
+        }
+        const result = new Map();
+        for (const [key, { family, weight }] of combos) {
+          try {
+            const o1 = await probeOffsetPx(family, weight, 100);
+            const o2 = await probeOffsetPx(family, weight, 30);
+            const k = (o1 - o2) / 70;
+            result.set(key, { k, c: o1 - k * 100 });
+          } catch (e) {
+            console.warn('글자 위치 보정 측정 실패:', key, e);
+          }
+        }
+        return result;
+      }
+
+      // 복제본의 글자들을 (측정된 만큼) 위로 올려서 화면과 같은 위치에 오게 한다.
+      function applyTextOffsets(doc, root, offsets) {
+        const win = doc.defaultView;
+        const nodes = [];
+        const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach((t) => {
+          const p = t.parentElement;
+          if (!p || !t.nodeValue.trim() || p.closest('svg')) return;
+          const cs = win.getComputedStyle(p);
+          const m = offsets.get(fontKeyOf(cs));
+          if (!m) return;
+          const px = m.k * parseFloat(cs.fontSize) + m.c;
+          if (Math.abs(px) < 0.3) return;
+          const span = doc.createElement('span');
+          span.style.cssText = `position:relative;top:${(-px).toFixed(2)}px;`;
+          span.textContent = t.nodeValue;
+          p.replaceChild(span, t);
+        });
+      }
+
+      async function exportCardAsPng() {
+        const btnTop = document.getElementById('btn-download');
+        const btnBottom = document.getElementById('btn-download-bottom');
+        btnTop.disabled = true;
+        btnBottom.disabled = true;
+        showToast('고해상도 사니와증 이미지를 생성 중입니다...');
+
+        let cloneContainer = null;
+        try {
+          cloneContainer = document.createElement('div');
+          cloneContainer.style.position = 'fixed';
+          cloneContainer.style.left = '-9999px';
+          cloneContainer.style.top = '0';
+          cloneContainer.style.width = `${CARD_WIDTH}px`;
+          cloneContainer.style.height = `${CARD_HEIGHT}px`;
+          cloneContainer.style.zIndex = '-1';
+
+          const clonedCard = saniwaCard.cloneNode(true);
+          clonedCard.style.boxShadow = 'none';
+
+          // ★ 색반전 처리
+          const clonedWatermarkImg = clonedCard.querySelector('#img-custom-watermark');
+          const originalSrc = imgCustomWatermark.getAttribute('src');
+          const isWatermarkVisible =
+            selectWatermark.value === 'custom' &&
+            !!originalSrc &&
+            !imgCustomWatermark.classList.contains('hidden');
+
+          if (clonedWatermarkImg && isWatermarkVisible && checkboxWatermarkInvert.checked) {
+            try {
+              const invertedUrl = await createInvertedDataUrl(imgCustomWatermark);
+              clonedWatermarkImg.style.filter = 'none';
+              clonedWatermarkImg.src = invertedUrl;
+              clonedWatermarkImg.classList.remove('hidden');
+            } catch (e) {
+              console.warn('문양 반전 실패, 원본 유지:', e);
+              clonedWatermarkImg.style.filter = 'none';
+            }
+          } else if (clonedWatermarkImg) {
+            clonedWatermarkImg.style.filter = 'none';
+          }
+
+          cloneContainer.appendChild(clonedCard);
+          document.body.appendChild(cloneContainer);
+
+          // 폰트 로딩 대기
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+          }
+
+          // 글자 위치 보정값 측정 (실패해도 저장은 계속 진행)
+          let textOffsets = new Map();
+          try {
+            textOffsets = await calibrateTextOffsets(saniwaCard);
+          } catch (e) {
+            console.warn('글자 위치 보정 실패:', e);
+          }
+
+          // 클론 내 모든 이미지 로딩 완료 대기
+          const imgs = clonedCard.querySelectorAll('img');
+          await Promise.all(
+            Array.from(imgs).map(
+              (img) =>
+                new Promise((res) => {
+                  if (img.complete && img.naturalWidth > 0) return res();
+                  img.onload = img.onerror = () => res();
+                })
+            )
+          );
+
+          // html2canvas 캡처 (해상도를 1600x1000 원본으로 그대로 뽑음)
+          const canvas = await html2canvas(clonedCard, {
+            scale: 1, 
+            useCORS: true,
+            backgroundColor: null,
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            logging: false,
+            onclone: async (doc, el) => {
+              await ensureCloneFonts(doc, el);
+              applyTextOffsets(doc, el, textOffsets);
+            },
+          });
+
+          const saniwaName = (document.getElementById('input-saniwa-name').value || '사니와').trim();
+          const link = document.createElement('a');
+          link.download = `사니와증_${saniwaName}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+
+          showToast(`'사니와증_${saniwaName}.png' 저장이 완료되었습니다!`);
+        } catch (err) {
+          console.error('이미지 생성 오류:', err);
+          showToast('이미지 생성 중 오류가 발생했습니다. 다시 시도해 주세요.', true);
+        } finally {
+          if (cloneContainer && cloneContainer.parentNode) {
+            document.body.removeChild(cloneContainer);
+          }
+          btnTop.disabled = false;
+          btnBottom.disabled = false;
+        }
+      }
+
+      document.getElementById('btn-download').addEventListener('click', exportCardAsPng);
+      document.getElementById('btn-download-bottom').addEventListener('click', exportCardAsPng);
+      loadSettingsFromStorage();
+    });
+  </script>
+</body>
+</html>
