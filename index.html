@@ -41,7 +41,7 @@
     .card-top-bar {
       height: 85px;
       border: 2px solid #4a474a;
-      border-radius: 15px;
+      border-radius: 40px;
       display: flex;
       align-items: center;
       background-color: rgba(255, 255, 255, 0.12);
@@ -54,7 +54,7 @@
       margin-top: 30px;
       height: 810px;
       border: 2px solid #4a474a;
-      border-radius: 15px;
+      border-radius: 40px;
       padding: 0px 30px 20px 25px;
       display: flex;
       flex-direction: column;
@@ -320,7 +320,11 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">사니와 경력</label>
-            <div class="grid grid-cols-3 gap-1.5">
+            <div class="grid grid-cols-4 gap-1.5">
+              <label class="cursor-pointer">
+                <input type="radio" name="saniwa-rank" value="견습" checked class="peer sr-only" />
+                <div class="text-center py-2 rounded-lg border border-slate-300 text-xs font-bold peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition">견습</div>
+              </label>
               <label class="cursor-pointer">
                 <input type="radio" name="saniwa-rank" value="신임" checked class="peer sr-only" />
                 <div class="text-center py-2 rounded-lg border border-slate-300 text-xs font-bold peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition">신임</div>
@@ -662,10 +666,10 @@
                       <!-- 사용자 업로드 이미지 -->
                       <img id="view-avatar-img" src="" alt="이미지" class="hidden absolute inset-0 w-full h-full object-cover origin-center" />
 
-                      <!-- 좌상단 계급 리본 장식 -->
-                      <div id="badge-rank-ribbon" class="absolute top-0 left-4 z-20 pointer-events-none drop-shadow">
-                        <svg width="50" height="70" viewBox="0 0 34 46">
-                          <polygon points="0,0 34,0 34,46 17,37 0,46" fill="#476e2d" stroke="#2c471b" stroke-width="1.5" />
+                      <!-- 좌상단 리본 장식 -->
+                      <div id="badge-rank-ribbon" class="absolute top-0 left-0 z-20 pointer-events-none drop-shadow">
+                        <svg width="60" height="80" viewBox="0 0 34 46">
+                          <polygon points="0,0 34,0 34,46 17,37 0,46" fill="#476e2d" stroke="#87ae6d" stroke-width="1.5" />
                           <polygon points="17,7 28,15 24,15 17,10 10,15 6,15" fill="#f3e59a" />
                           <polygon points="17,16 28,24 24,24 17,19 10,24 6,24" fill="#f3e59a" />
                           <rect x="8" y="26" width="18" height="3.5" fill="#f3e59a" />
@@ -673,25 +677,26 @@
                       </div>
 
                       <!-- 좌하단 벚꽃 엠블럼 장식 -->
-                      <div id="badge-sakura" class="absolute bottom-4 left-4 z-20 pointer-events-none drop-shadow-sm">
-                        <svg width="54" height="54" viewBox="0 0 64 64">
+                      <div id="badge-sakura" class="absolute bottom-0 left-2 z-20 pointer-events-none drop-shadow-sm">
+                        <svg width="70" height="70" viewBox="0 0 64 64">
                           <g transform="translate(32,32)">
                             <g transform="rotate(0)">
-                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffdede" stroke="#9b8cec" stroke-width="1.8" />
                             </g>
                             <g transform="rotate(72)">
-                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#9b8cec" stroke-width="1.8" />
                             </g>
                             <g transform="rotate(144)">
-                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#9b8cec" stroke-width="1.8" />
                             </g>
                             <g transform="rotate(216)">
-                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#9b8cec" stroke-width="1.8" />
                             </g>
                             <g transform="rotate(288)">
-                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#8c9bd1" stroke-width="1.8" />
+                              <path d="M0,-4 C-8,-14 -14,-24 -4,-28 L0,-23 L4,-28 C14,-24 8,-14 0,-4 Z" fill="#ffffff" stroke="#9b8cec" stroke-width="1.8" />
                             </g>
                             <circle cx="0" cy="0" r="5.5" fill="#9fb0ea" />
+                            <circle cx="0" cy="0" r="3.5" fill="#ffffff" />
                           </g>
                         </svg>
                       </div>
@@ -793,6 +798,10 @@
           <button id="btn-download-bottom" type="button" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition cursor-pointer shrink-0">
             사니와증 PNG 다운로드
           </button>
+        </div>
+        <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
+          <p>🛎️ <strong>업데이트 이력</strong>
+		  <p>2026.11.24 : 사니와 경력에 [견습] 추가. 테두리 라운딩 처리, 벚꽃 엠블럼 미세 조정</p>
         </div>
       </div>
     </section>
